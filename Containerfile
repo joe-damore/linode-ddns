@@ -3,11 +3,15 @@ ARG ALPINE_LINUX_VERSION=3.22
 ###############
 # Build Image #
 ###############
-FROM denoland/deno:latest as build
+FROM denoland/deno:alpine as build
 
 RUN mkdir /linode-ddns
 WORKDIR /linode-ddns
 USER deno
+
+# Update and install dependencies
+RUN apk upgrade --update && \
+  apk add --no-cache git
 
 RUN git clone -b master https://github.com/joe-damore/linode-ddns.git .
 RUN deno run build
