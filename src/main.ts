@@ -77,21 +77,31 @@ const updateDomainRecords = async (domainName: string, hostname: string) => {
   }
 
   const records = await depaginate((page) => getDomainRecords(desiredDomain.id, { page }));
-  const existingRecords = records.filter((record) => record.type === 'A' && record.name === hostname);
+  const existingRecords = records.filter((record) => (record.type === 'A' || record.type === 'AAAA') && record.name === hostname);
 
-  // TODO Make updates more intelligently.
-  await Promise.all([
-    ...existingRecords.map((existingRecord) => deleteDomainRecord(desiredDomain.id, existingRecord.id)),
-    ...[ipv4, ipv6].map((ip) => {
-      if (ip) {
-        createDomainRecord(desiredDomain.id, {
-          type: 'A',
-          name: hostname,
-          target: ip,
-        });
-      }
-    }),
-  ]);
+  // If necessary, create new domain records.
+  await Promise.all([ipv4, ipv6].map((ip) => {
+    if (!ip) {
+      return;
+    }
+
+    if (existingRecords.find((record) => record.target === ip)) {
+      return;
+    }
+
+    return createDomainRecord(desiredDomain.id, {
+      type: ip === ipv4 ? 'A' : 'AAAA',
+      name: hostname,
+      target: ip,
+    });
+  }));
+
+  // Delete obsolete records.
+  await Promise.all(existingRecords.map((existingRecord) => {
+    if ((existingRecord.type === 'A' || existingRecord.type === 'AAAA') && existingRecord.name === hostname && ![ipv4, ipv6].includes(existingRecord.target)) {
+      return deleteDomainRecord(desiredDomain.id, existingRecord.id);
+    }
+  }));
 };
 
 
