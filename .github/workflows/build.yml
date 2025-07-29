@@ -122,7 +122,7 @@ jobs:
 
       - name: Push To GHCR
         uses: redhat-actions/push-to-registry@5ed88d269cf581ea9ef6dd6806d01562096bee9c # v2
-        if: github.event_name != 'pull_request' && github.ref == 'master'
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
         id: push
         env:
           REGISTRY_USER: ${{ github.actor }}
@@ -140,10 +140,10 @@ jobs:
       # to consume. For more details, review the image signing section of the README.
       - name: Install Cosign
         uses: sigstore/cosign-installer@d58896d6a1865668819e1d91763c7751a165e159 # v3.9.2
-        if: github.event_name != 'pull_request' && github.ref == 'master'
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
 
       - name: Sign container image
-        if: github.event_name != 'pull_request' && github.ref == 'master'
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
         run: |
           IMAGE_FULL="${{ steps.registry_case.outputs.lowercase }}/${{ steps.image_case.outputs.lowercase }}"
           for tag in ${{ steps.metadata.outputs.tags }}; do
