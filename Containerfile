@@ -6,6 +6,7 @@ ARG ALPINE_LINUX_VERSION=3.22
 FROM denoland/deno:alpine as build
 
 WORKDIR /app
+RUN chown -R deno:deno /app
 USER deno
 
 COPY . .
