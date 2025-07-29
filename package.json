@@ -1,0 +1,19 @@
+{
+  "name": "linode-ddns",
+  "version": "0.1.0",
+  "description": "",
+  "main": "src/main.ts",
+  "scripts": {
+    "start": "deno ./src/main.ts",
+    "build": "deno compile --allow-env --allow-read --allow-net --output ./dist/linode-ddns ./src/main.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@linode/api-v4": "^0.144.0"
+  },
+  "devDependencies": {
+    "@types/deno": "^2.3.0"
+  }
+}
