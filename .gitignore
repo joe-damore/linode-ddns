@@ -6,6 +6,9 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
+# Signing key
+cosign.key
+
 # Test/development config files
 linode-ddns.json
 
