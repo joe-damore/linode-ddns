@@ -7,12 +7,12 @@ FROM denoland/deno:alpine as build
 
 RUN mkdir /linode-ddns
 WORKDIR /linode-ddns
-USER deno
 
 # Update and install dependencies
 RUN apk upgrade --update && \
   apk add --no-cache git
 
+USER deno
 RUN git clone -b master https://github.com/joe-damore/linode-ddns.git .
 RUN deno run build
 
