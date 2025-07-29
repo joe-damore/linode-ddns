@@ -9,11 +9,8 @@ RUN mkdir /linode-ddns
 WORKDIR /linode-ddns
 USER deno
 
+RUN git clone -b master https://github.com/joe-damore/linode-ddns.git .
 RUN deno run build
-
-# RUN apk upgrade --update && \
-#     apk add --no-cache git && \
-#     git clone -b master https://github.com/joe-damore/linode-ddns.git .
 
 #############
 # App Image #
