@@ -25,7 +25,7 @@ const getPublicIpAddress = async (ipType: 'v4' | 'v6' = 'v4'): Promise<string | 
 
 interface UpdateDomainRecordOptions {
   domain: string;
-  hostname: string;
+  hostnames: string;
 }
 
 type ResultGenerator<T> = (page: number) => Promise<ResourcePage<T>>;
@@ -59,7 +59,7 @@ const depaginate = async <T>(
   return data;
 }
 
-const updateDomainRecords = async (domainName: string, hostname: string) => {
+const updateDomainRecords = async (domainName: string, hostnames: string[]) => {
   const [ipv4, ipv6] = await Promise.all([
     getPublicIpAddress('v4'),
     getPublicIpAddress('v6'),
@@ -77,28 +77,30 @@ const updateDomainRecords = async (domainName: string, hostname: string) => {
   }
 
   const records = await depaginate((page) => getDomainRecords(desiredDomain.id, { page }));
-  const existingRecords = records.filter((record) => (record.type === 'A' || record.type === 'AAAA') && record.name === hostname);
+  const existingRecords = records.filter((record) => (record.type === 'A' || record.type === 'AAAA') && hostnames.includes(record.name));
 
   // If necessary, create new domain records.
-  await Promise.all([ipv4, ipv6].map((ip) => {
-    if (!ip) {
-      return;
-    }
+  for (let hostname of hostnames) {
+    await Promise.all([ipv4, ipv6].map((ip) => {
+      if (!ip) {
+        return;
+      }
 
-    if (existingRecords.find((record) => record.target === ip)) {
-      return;
-    }
+      if (existingRecords.find((record) => record.target === ip)) {
+        return;
+      }
 
-    return createDomainRecord(desiredDomain.id, {
-      type: ip === ipv4 ? 'A' : 'AAAA',
-      name: hostname,
-      target: ip,
-    });
-  }));
+      return createDomainRecord(desiredDomain.id, {
+        type: ip === ipv4 ? 'A' : 'AAAA',
+        name: hostname,
+        target: ip,
+      });
+    }));
+  }
 
   // Delete obsolete records.
   await Promise.all(existingRecords.map((existingRecord) => {
-    if ((existingRecord.type === 'A' || existingRecord.type === 'AAAA') && existingRecord.name === hostname && ![ipv4, ipv6].includes(existingRecord.target)) {
+    if ((existingRecord.type === 'A' || existingRecord.type === 'AAAA') && hostnames.includes(existingRecord.name) && ![ipv4, ipv6].includes(existingRecord.target)) {
       return deleteDomainRecord(desiredDomain.id, existingRecord.id);
     }
   }));
@@ -110,12 +112,9 @@ const updateDomainRecords = async (domainName: string, hostname: string) => {
   console.info(`Looking for configuration file at '${configPath}'...`);
 
   try {
-    const configText = await Deno.readTextFile(configPath);
-    const configData = JSON.parse(configText);
-
-    const token = configData['token'];
-    const domain = configData['domain'];
-    const hostname = configData['hostname'];
+    const token = Deno.env.get('LINODE_API_TOKEN');
+    const domain = Deno.args[0];
+    const hostnames = Deno.args.slice(1);
 
     if (!token) {
       throw new Error('No `token` specified in configuration file. Please specify a Linode API-v4 personal access token.');
@@ -125,7 +124,7 @@ const updateDomainRecords = async (domainName: string, hostname: string) => {
       throw new Error('No `domain` specified in configuration file. Please specify a domain name.');
     }
 
-    if (!hostname) {
+    if (!hostnames || !hostnames.length) {
       throw new Error('No `hostname` specified in configuration file. Please specify a hostname.');
     }
 
@@ -135,7 +134,7 @@ const updateDomainRecords = async (domainName: string, hostname: string) => {
     });
 
     console.info('Updating domain records...');
-    await updateDomainRecords(domain, hostname);
+    await updateDomainRecords(domain, hostnames);
     console.info('Done!');
   }
   catch (e: any) {

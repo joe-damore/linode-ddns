@@ -18,6 +18,7 @@ RUN deno install && deno run build
 FROM alpine:3.22 as linode-ddns
 RUN mkdir /linode-ddns
 WORKDIR /linode-ddns
+ENV LINODE_API_TOKEN=
 
 COPY --from=build /app/dist/linode-ddns /linode-ddns/linode-ddns
 
